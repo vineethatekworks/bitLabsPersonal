@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.ArrayList;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -41,27 +40,28 @@ import org.slf4j.LoggerFactory;
 
 @Service
 public class ApplicantProfileService {
+
 	private final ApplicantProfileRepository applicantProfileRepository;
+
 	private final RegisterRepository applicantService;
 
 	@Autowired
 	private ApplicantSkillsRepository applicantSkillsRepository;
-	
-	@Autowired
-    private SkillBadgeRepository skillBadgeRepository;
-	
-	@Autowired
-    private ApplicantSkillBadgeRepository applicantSkillBadgeRepository;
-	
-	@Autowired
-	private JobRepository  jobRepository;
-	
-	@Autowired
-	private ApplicantTestRepository applicantTestRepository;
-	
-	private static final Logger logger = LoggerFactory.getLogger(ApplicantProfileService.class);
 
 	@Autowired
+	private SkillBadgeRepository skillBadgeRepository;
+
+	@Autowired
+	private ApplicantSkillBadgeRepository applicantSkillBadgeRepository;
+
+	@Autowired
+	private JobRepository jobRepository;
+
+	@Autowired
+	private ApplicantTestRepository applicantTestRepository;
+
+	private static final Logger logger = LoggerFactory.getLogger(ApplicantProfileService.class);
+
 	public ApplicantProfileService(ApplicantProfileRepository applicantProfileRepository,
 			RegisterRepository applicantService) {
 		this.applicantProfileRepository = applicantProfileRepository;
@@ -113,14 +113,14 @@ public class ApplicantProfileService {
 			dto.setApplicant(applicant);
 			dto.setBasicDetails(applicantProfile.getBasicDetails());
 			Set<ApplicantSkills> unmatchedSkills = applicantProfile.getSkillsRequired().stream()
-				    .filter(skill -> 
-				        applicantProfile.getApplicant().getApplicantSkillBadges().stream()
-				            .noneMatch(badge -> 
-				                badge.getSkillBadge().getName().trim().equalsIgnoreCase(skill.getSkillName().trim()) 
-				                && !badge.getFlag().equalsIgnoreCase("removed") // Exclude badges with flag 'removed'
-				            )
-				    )
-				    .collect(Collectors.toSet()); 
+					.filter(skill -> applicantProfile.getApplicant().getApplicantSkillBadges().stream()
+							.noneMatch(badge -> badge.getSkillBadge().getName().trim().equalsIgnoreCase(
+									skill.getSkillName().trim()) && !badge.getFlag().equalsIgnoreCase("removed") // Exclude
+																													// badges
+																													// with
+																													// flag
+																													// 'removed'
+							)).collect(Collectors.toSet());
 
 			dto.setSkillsRequired(unmatchedSkills);
 			dto.setExperience(applicantProfile.getExperience());
@@ -130,7 +130,6 @@ public class ApplicantProfileService {
 		}
 		return dto;
 	}
-
 
 	public ApplicantProfileDTO getApplicantProfileById(long applicantId) {
 		try {
@@ -212,7 +211,6 @@ public class ApplicantProfileService {
 		return "profile saved sucessfully";
 	}
 
-	
 	public void deleteApplicantProfile(long applicantId) {
 		try {
 			applicantProfileRepository.deleteById((int) applicantId);
@@ -222,7 +220,6 @@ public class ApplicantProfileService {
 		}
 	}
 
-
 	public int getApplicantProfileById1(int applicantId) {
 
 		ApplicantProfile applicantProfile = applicantProfileRepository.findByApplicantId(applicantId);
@@ -230,7 +227,6 @@ public class ApplicantProfileService {
 		return applicantProfile != null ? applicantProfile.getProfileid() : 0;
 
 	}
-
 
 	@Transactional
 	public void updateBasicDetails(Long applicantId, BasicDetailsDTO basicDetailsDTO) {
@@ -249,7 +245,6 @@ public class ApplicantProfileService {
 		applicantProfileRepository.save(applicantProfile);
 	}
 
-
 	@Transactional
 	public String updateApplicantProfile1(long applicantId, ApplicantProfileUpdateDTO updatedProfileDTO) {
 		// Find applicant
@@ -261,60 +256,55 @@ public class ApplicantProfileService {
 			throw new CustomException("Your profile not found and please fill profile " + applicantId,
 					HttpStatus.NOT_FOUND);
 		} else {
-			
-			 // Extract existing skills from the database
-	        Set<String> existingSkillNames = existingProfile.getSkillsRequired().stream()
-	                .map(ApplicantSkills::getSkillName)
-	                .collect(Collectors.toSet());
 
-	        // Extract updated skills from the DTO
-	        Set<String> updatedSkillNames = new HashSet<>();
-	        if (updatedProfileDTO.getSkillsRequired() != null) {
-	            for (ApplicantProfileUpdateDTO.SkillDTO skillDTO : updatedProfileDTO.getSkillsRequired()) {
-	                updatedSkillNames.add(skillDTO.getSkillName());
-	            }
-	        }
+			// Extract existing skills from the database
+			Set<String> existingSkillNames = existingProfile.getSkillsRequired().stream()
+					.map(ApplicantSkills::getSkillName).collect(Collectors.toSet());
 
-	      
-	        Set<String> removedSkills = new HashSet<>(existingSkillNames);
-	        removedSkills.removeAll(updatedSkillNames);
-	        
-	
-	        Set<String> addedSkills = new HashSet<>(updatedSkillNames);
-	        addedSkills.removeAll(existingSkillNames);
-	        
-	        if(addedSkills != null) {
-	        	for(String skillBadgeName: addedSkills) {
-	        		try {
-	        			SkillBadge skillBadge = skillBadgeRepository.findByName(skillBadgeName);
-	        	    	applicantSkillBadgeRepository.updateFlagAsAdded(applicantId, skillBadge.getId());
-	        	    }catch(Exception e) {
-	        	    	System.out.println(e.getMessage());
-	        	    }
-	        	}
-	        }
-	        
-	        if(removedSkills != null) {
-	        for(String skillBadgeName: removedSkills ) {
-	        	
-	        	 
-	        	    SkillBadge skillBadge = skillBadgeRepository.findByName(skillBadgeName);
-	        	    System.out.println(skillBadge.getId()+"   "+skillBadge.getName());
-	        	    try {
-	        	    	applicantSkillBadgeRepository.updateFlagAsRemoved(applicantId, skillBadge.getId());
+			// Extract updated skills from the DTO
+			Set<String> updatedSkillNames = new HashSet<>();
+			if (updatedProfileDTO.getSkillsRequired() != null) {
+				for (ApplicantProfileUpdateDTO.SkillDTO skillDTO : updatedProfileDTO.getSkillsRequired()) {
+					updatedSkillNames.add(skillDTO.getSkillName());
+				}
+			}
+
+			Set<String> removedSkills = new HashSet<>(existingSkillNames);
+			removedSkills.removeAll(updatedSkillNames);
+
+			Set<String> addedSkills = new HashSet<>(updatedSkillNames);
+			addedSkills.removeAll(existingSkillNames);
+
+			if (addedSkills != null) {
+				for (String skillBadgeName : addedSkills) {
+					try {
+						SkillBadge skillBadge = skillBadgeRepository.findByName(skillBadgeName);
+						applicantSkillBadgeRepository.updateFlagAsAdded(applicantId, skillBadge.getId());
+					} catch (Exception e) {
+						System.out.println(e.getMessage());
+					}
+				}
+			}
+
+			if (removedSkills != null) {
+				for (String skillBadgeName : removedSkills) {
+
+					SkillBadge skillBadge = skillBadgeRepository.findByName(skillBadgeName);
+					System.out.println(skillBadge.getId() + "   " + skillBadge.getName());
+					try {
+						applicantSkillBadgeRepository.updateFlagAsRemoved(applicantId, skillBadge.getId());
 //	        	    applicantSkillBadgeRepository.deleteByApplicantIdAndSkillBadgeId(applicantId, skillBadge.getId());
-	        	    }catch(Exception e) {
-	        	    	System.out.println(e.getMessage());
-	        	    }
-	        }
-	        }
-			
+					} catch (Exception e) {
+						System.out.println(e.getMessage());
+					}
+				}
+			}
+
 			existingProfile.setExperience(updatedProfileDTO.getExperience());
 			existingProfile.setQualification(updatedProfileDTO.getQualification());
 			existingProfile.setSpecialization(updatedProfileDTO.getSpecialization());
 			existingProfile.setPreferredJobLocations(new HashSet<>(updatedProfileDTO.getPreferredJobLocations()));
 
-			 
 			// Update skills required
 			Set<ApplicantSkills> updatedSkills = new HashSet<>();
 			if (updatedProfileDTO.getSkillsRequired() != null) {
@@ -341,75 +331,80 @@ public class ApplicantProfileService {
 		return applicantService.save(applicant);
 
 	}
-	
+
 	public ResponseEntity<?> getJobDetailsForApplicantSkillMatch(Long applicantId, Long jobId) {
-	    System.out.println("Got job ID: " + jobId + " and applicant ID: " + applicantId);
- 
-	    if (jobId == null) {
-	        System.out.println("Job ID is null");
-	        return ResponseEntity.badRequest().body("Job ID cannot be null.");
-	    }
- 
-	    final ModelMapper modelMapper = new ModelMapper();
-	    Job job = jobRepository.findById(jobId).orElseThrow(() ->
-	        new CustomException("Job with ID " + jobId + " not found.", HttpStatus.INTERNAL_SERVER_ERROR));
- 
-	    ApplicantProfile applicantProfile = applicantProfileRepository.findByApplicantId(applicantId);
-	    if (applicantProfile == null) {
-	        throw new CustomException("Applicant with ID " + applicantId + " not found.", HttpStatus.INTERNAL_SERVER_ERROR);
-	    }
- 
-	    Set<ApplicantSkills> applicantSkills = applicantProfile.getSkillsRequired();
-	    Set<RecuriterSkills> jobSkills = job.getSkillsRequired();
-	    Set<ApplicantSkills> matchedSkills = new HashSet<>();
-	    Set<ApplicantSkills> neitherMatchedNorNonMatchedSkills = new HashSet<>(applicantSkills);
-	    int originalJobSkillsSize = jobSkills.size();
- 
-	    // Matching skills logic...
-	    for (ApplicantSkills applicantSkill : applicantSkills) {
-	        boolean isMatched = jobSkills.stream()
-	            .anyMatch(jobSkill -> jobSkill.getSkillName().equalsIgnoreCase(applicantSkill.getSkillName()));
- 
-	        if (isMatched) {
-	            matchedSkills.add(applicantSkill);
-	            neitherMatchedNorNonMatchedSkills.remove(applicantSkill);
-	        }
-	    }
- 
-	    jobSkills.removeIf(jobSkill -> matchedSkills.stream()
-	        .anyMatch(matchedSkill -> matchedSkill.getSkillName().equalsIgnoreCase(jobSkill.getSkillName())));
- 
-	    job.setSkillsRequired(jobSkills);
-	    Double matchPercentage = ((double) matchedSkills.size() /originalJobSkillsSize) * 100;
-	    System.out.println(matchPercentage + " match ");
-	    int roundedMatchPercentage = (int) Math.round(matchPercentage);
-	    System.out.println(roundedMatchPercentage + " round ");
-	    JobDTO jobDTO = modelMapper.map(job, JobDTO.class);
-	    jobDTO.setMatchPercentage(roundedMatchPercentage);
- 
-	    // Retrieve test scores for the specific applicant ID
-	    Map<String, Double> testScores = applicantTestRepository.findTestScoresByApplicantId(applicantId);
-	    Double aptitudeScore = testScores != null ? testScores.getOrDefault("aptitudeScore", 0.0) : 0.0;
-	    Double technicalScore = testScores != null ? testScores.getOrDefault("technicalScore", 0.0) : 0.0;
-	    jobDTO.setAptitudeScore(aptitudeScore);
-	    jobDTO.setTechnicalScore(technicalScore);
-	    System.out.println("Aptitude Score: " + aptitudeScore);
-	    System.out.println("Technical Score: " + technicalScore);
-	    jobDTO.setMatchedSkills(matchedSkills);
-	    jobDTO.setAdditionalSkills(neitherMatchedNorNonMatchedSkills);
-	    try {
-	    List<ApplicantSkillBadge> applicantSkillsBadges = applicantSkillBadgeRepository.findPassedSkillBadgesByApplicantId(applicantId);
-	    logger.info("got skill badge for applicantId",applicantSkillsBadges.size());
-        if (applicantSkillsBadges != null && !applicantSkillsBadges.isEmpty()) {
-            // Use the already retrieved applicantSkills to set the DTO
-          jobDTO.setApplicantSkillBadges(applicantSkillsBadges);
-        }
-       
-    } catch(Exception e) {
-        e.printStackTrace();
-    }
-	    return ResponseEntity.ok(jobDTO);
+		System.out.println("Got job ID: " + jobId + " and applicant ID: " + applicantId);
+
+		if (jobId == null) {
+			System.out.println("Job ID is null");
+			return ResponseEntity.badRequest().body("Job ID cannot be null.");
+		}
+
+		final ModelMapper modelMapper = new ModelMapper();
+		Job job = jobRepository.findById(jobId).orElseThrow(
+				() -> new CustomException("Job with ID " + jobId + " not found.", HttpStatus.INTERNAL_SERVER_ERROR));
+
+		ApplicantProfile applicantProfile = applicantProfileRepository.findByApplicantId(applicantId);
+		if (applicantProfile == null) {
+			throw new CustomException("Applicant with ID " + applicantId + " not found.",
+					HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+
+		Set<ApplicantSkills> applicantSkills = applicantProfile.getSkillsRequired();
+		Set<RecuriterSkills> jobSkills = job.getSkillsRequired();
+		Set<ApplicantSkills> matchedSkills = new HashSet<>();
+		Set<ApplicantSkills> neitherMatchedNorNonMatchedSkills = new HashSet<>(applicantSkills);
+		int originalJobSkillsSize = jobSkills.size();
+
+		// Matching skills logic...
+		for (ApplicantSkills applicantSkill : applicantSkills) {
+			boolean isMatched = jobSkills.stream()
+					.anyMatch(jobSkill -> jobSkill.getSkillName().equalsIgnoreCase(applicantSkill.getSkillName()));
+
+			if (isMatched) {
+				matchedSkills.add(applicantSkill);
+				neitherMatchedNorNonMatchedSkills.remove(applicantSkill);
+			}
+		}
+
+		jobSkills.removeIf(jobSkill -> matchedSkills.stream()
+				.anyMatch(matchedSkill -> matchedSkill.getSkillName().equalsIgnoreCase(jobSkill.getSkillName())));
+
+		job.setSkillsRequired(jobSkills);
+		Double matchPercentage = ((double) matchedSkills.size() / originalJobSkillsSize) * 100;
+		System.out.println(matchPercentage + " match ");
+		int roundedMatchPercentage = (int) Math.round(matchPercentage);
+		System.out.println(roundedMatchPercentage + " round ");
+		JobDTO jobDTO = modelMapper.map(job, JobDTO.class);
+		jobDTO.setMatchPercentage(roundedMatchPercentage);
+
+		// Retrieve test scores for the specific applicant ID
+		Map<String, Double> testScores = applicantTestRepository.findTestScoresByApplicantId(applicantId);
+		Double aptitudeScore = testScores != null ? testScores.getOrDefault("aptitudeScore", 0.0) : 0.0;
+		Double technicalScore = testScores != null ? testScores.getOrDefault("technicalScore", 0.0) : 0.0;
+		jobDTO.setAptitudeScore(aptitudeScore);
+		jobDTO.setTechnicalScore(technicalScore);
+		System.out.println("Aptitude Score: " + aptitudeScore);
+		System.out.println("Technical Score: " + technicalScore);
+		jobDTO.setMatchedSkills(matchedSkills);
+		jobDTO.setAdditionalSkills(neitherMatchedNorNonMatchedSkills);
+		try {
+			List<ApplicantSkillBadge> applicantSkillsBadges = applicantSkillBadgeRepository
+					.findPassedSkillBadgesByApplicantId(applicantId);
+			logger.info("got skill badge for applicantId", applicantSkillsBadges.size());
+			if (applicantSkillsBadges != null && !applicantSkillsBadges.isEmpty()) {
+				// Use the already retrieved applicantSkills to set the DTO
+				jobDTO.setApplicantSkillBadges(applicantSkillsBadges);
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return ResponseEntity.ok(jobDTO);
 	}
-  
+	
+	 public List<String> getSkillNamesByApplicantId(Long applicantId) {
+	        return applicantProfileRepository.findSkillNamesByApplicantId(applicantId);
+	    }
 
 }

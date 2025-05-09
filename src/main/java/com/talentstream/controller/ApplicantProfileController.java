@@ -24,6 +24,7 @@ import com.talentstream.service.ApplicantProfileService;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.persistence.EntityNotFoundException;
@@ -245,5 +246,14 @@ public class ApplicantProfileController {
         	logger.error("details not found for applicantId and jobId :{}",applicantId,jobId);
         	return ResponseEntity.notFound().build();
         }
+    }
+    
+    @GetMapping("/{id}/skills")
+    public ResponseEntity<List<String>> getSkillNames(@PathVariable("id") Long applicantId) {
+        List<String> skills = applicantProfileService.getSkillNamesByApplicantId(applicantId);
+        if (skills.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(skills);
     }
 }

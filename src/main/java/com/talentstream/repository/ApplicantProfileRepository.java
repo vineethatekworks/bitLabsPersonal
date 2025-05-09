@@ -1,5 +1,6 @@
-	package com.talentstream.repository;
+package com.talentstream.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import javax.transaction.Transactional;
@@ -15,10 +16,11 @@ import com.talentstream.entity.ApplicantProfile;
 @Repository
 public interface ApplicantProfileRepository extends JpaRepository<ApplicantProfile, Integer> {
 
-ApplicantProfile findByApplicantId(long applicantid);
+	ApplicantProfile findByApplicantId(long applicantid);
 
-@Query("SELECT a FROM ApplicantProfile a JOIN FETCH a.skillsRequired WHERE a.applicant.id = :applicantId")
-Optional<ApplicantProfile> findByApplicantIdWithSkills(@Param("applicantId") long applicantId);
+	@Query("SELECT a FROM ApplicantProfile a JOIN FETCH a.skillsRequired WHERE a.applicant.id = :applicantId")
+	Optional<ApplicantProfile> findByApplicantIdWithSkills(@Param("applicantId") long applicantId);
 
-
+	@Query("SELECT s.skillName FROM ApplicantProfile ap JOIN ap.skillsRequired s WHERE ap.applicant.id = :applicantId")
+	List<String> findSkillNamesByApplicantId(@Param("applicantId") Long applicantId);
 }
