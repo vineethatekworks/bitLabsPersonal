@@ -5,6 +5,7 @@ import org.springframework.stereotype.Repository;
 
 import com.talentstream.entity.JobRecruiter;
 
+
 @Repository
 
 public interface JobRecruiterRepository extends JpaRepository<JobRecruiter, Long> {

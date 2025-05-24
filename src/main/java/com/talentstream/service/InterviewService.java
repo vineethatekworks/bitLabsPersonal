@@ -1,15 +1,19 @@
 package com.talentstream.service;
 
-import java.util.List;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
 import com.google.gson.*;
-import com.talentstream.dto.EvaluateResponseDTO;
-import com.talentstream.dto.InterviewResponseDTO;
+import com.talentstream.dto.QuestionResponseDTO;
+import com.talentstream.entity.*;
+import com.talentstream.repository.*;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
 import java.net.URI;
 import java.net.http.*;
+import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class InterviewService {
@@ -17,106 +21,167 @@ public class InterviewService {
     @Value("${gemini.api.key}")
     private String apiKey;
 
-    private final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=";
+    private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=";
+    private static final int TOTAL_QUESTIONS = 3;
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final Gson gson = new Gson();
 
-    // Generate beginner-level programming questions
-    public ResponseEntity<InterviewResponseDTO> generateQuestions(String name, String skill) {
-        String prompt = "Generate 3 simple beginner-level programming questions for a candidate skilled in " 
-            + skill 
-            + ". The questions should be easy to understand and implement, like: 'Write a Java method named addNumbers that takes two integers as input and returns their sum.' Format questions clearly and no extra explanation.";
-        
+    @Autowired
+    private  InterviewSessionRepo sessionRepository;
+    @Autowired
+    private  InterviewDataRepo dataRepository;
+
+
+    // Start interview, pass Applicant entity (load this in your controller)
+    public QuestionResponseDTO startInterview(Applicant applicant, List<String> skills) {
+        String prompt = buildPrompt(skills);
         List<String> questions = callGemini(prompt);
 
-        InterviewResponseDTO response = new InterviewResponseDTO(questions);
-        return ResponseEntity.ok(response);
-    }
+        InterviewSession session = new InterviewSession();
+        session.setSessionId(UUID.randomUUID());
+        session.setApplicant(applicant);
+        session.setCreatedAt(LocalDateTime.now());
 
-    // Evaluate candidate's answers with short feedback and a score out of 100
-    public ResponseEntity<EvaluateResponseDTO> evaluateAnswers(String name, String skill, List<String> questions, List<String> answers) {
-        List<String> feedback = new ArrayList<>();
-        int totalScore = 0;
-
-        for (int i = 0; i < answers.size(); i++) {
-            String prompt = "You are evaluating a beginner-level " + skill + " interview answer.\n"
-                + "Question: \"" + questions.get(i) + "\"\n"
-                + "Candidate's Answer: \"" + answers.get(i) + "\"\n"
-                + "Provide short feedback specific to this question and answer.\n"
-                + "Then on a new line, write 'Score: X' where X is a number between 0 and 100.";
-
-            List<String> response = callGemini(prompt);
-
-            // Build feedback string excluding the score line
-            StringBuilder feedbackBuilder = new StringBuilder();
-            for (String line : response) {
-                if (!line.trim().toLowerCase().startsWith("score:")) {
-                    feedbackBuilder.append(line).append(" ");
-                }
-            }
-
-            String feedbackText = feedbackBuilder.toString().trim();
-            feedback.add("Q" + (i + 1) + ": " + feedbackText);
-
-            int score = extractScore(String.join("\n", response));
-            System.out.println("Extracted score for Q" + (i + 1) + ": " + score);
-            totalScore += score;
+        List<InterviewData> interviewDataList = new ArrayList<>();
+        for (int i = 0; i < questions.size(); i++) {
+            InterviewData data = new InterviewData();
+            data.setSession(session);
+            data.setQuestionNumber(i + 1);
+            data.setQuestionText(questions.get(i));
+            interviewDataList.add(data);
         }
+        session.setInterviewDataList(interviewDataList);
 
-        int averageScore = answers.size() > 0 ? totalScore / answers.size() : 0;
-        EvaluateResponseDTO evaluationResponse = new EvaluateResponseDTO(feedback, averageScore);
+        sessionRepository.save(session);
 
-        return ResponseEntity.ok(evaluationResponse);
+        return new QuestionResponseDTO(session.getSessionId().toString(), 1, questions.get(0), false);
     }
 
-    // Call Gemini API and parse the result
+    // Submit answer and get next question or score
+    public QuestionResponseDTO submitAnswer(String sessionIdStr, int questionNumber, String answer) {
+        UUID sessionId = UUID.fromString(sessionIdStr);
+        InterviewSession session = sessionRepository.findById(sessionId).orElseThrow(() -> new RuntimeException("Invalid sessionId"));
+
+        InterviewData data = session.getInterviewDataList().stream().filter(d -> d.getQuestionNumber() == questionNumber).findFirst().orElseThrow(() -> new RuntimeException("Question not found"));
+
+        data.setAnswerText(answer);
+        dataRepository.save(data);
+
+        int nextQuestionNumber = questionNumber + 1;
+
+        if (nextQuestionNumber > session.getInterviewDataList().size()) {
+            return completeInterview(session, sessionIdStr);
+        } else {
+            String nextQuestion = session.getInterviewDataList().stream()
+                    .filter(d -> d.getQuestionNumber() == nextQuestionNumber)
+                    .findFirst()
+                    .map(InterviewData::getQuestionText)
+                    .orElseThrow(() -> new RuntimeException("Next question not found"));
+
+            return new QuestionResponseDTO(sessionIdStr, nextQuestionNumber, nextQuestion, false);
+        }
+    }
+
     private List<String> callGemini(String prompt) {
         try {
-            Map<String, Object> content = Map.of(
-                "contents", List.of(
-                    Map.of("parts", List.of(Map.of("text", prompt)))
-                )
-            );
+            Map<String, Object> content = Map.of("contents",
+                List.of(Map.of("parts", List.of(Map.of("text", prompt)))));
 
             HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(GEMINI_URL + apiKey))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(gson.toJson(content)))
-                .build();
+                    .uri(URI.create(GEMINI_URL + apiKey))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(gson.toJson(content)))
+                    .build();
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
             JsonObject json = JsonParser.parseString(response.body()).getAsJsonObject();
             JsonArray candidates = json.getAsJsonArray("candidates");
-            JsonObject parts = candidates.get(0).getAsJsonObject()
+            JsonObject parts = candidates.get(0)
+                    .getAsJsonObject()
                     .getAsJsonObject("content")
                     .getAsJsonArray("parts")
-                    .get(0).getAsJsonObject();
+                    .get(0)
+                    .getAsJsonObject();
 
             String text = parts.get("text").getAsString();
-            return Arrays.asList(text.split("\n"));
+
+            return Arrays.stream(text.split("\n"))
+                    .map(String::trim)
+                    .filter(line -> !line.isEmpty())
+                    .collect(Collectors.toList());
+
         } catch (Exception e) {
             return List.of("Gemini API Error: " + e.getMessage());
         }
     }
 
-    // Extract score from feedback string
-    private int extractScore(String feedback) {
-        try {
-            for (String line : feedback.split("\n")) {
-                line = line.trim();
-                if (line.toLowerCase().startsWith("score:")) {
-                    String scoreStr = line.substring(6).trim(); // after "Score:"
-                    int score = Integer.parseInt(scoreStr);
-                    if (score >= 0 && score <= 100) {
-                        System.out.println("Extracted score from line: " + score);
-                        return score;
-                    }
+    
+    private QuestionResponseDTO completeInterview(InterviewSession session, String sessionIdStr) {
+        Map<String, String> feedbackMap = new LinkedHashMap<>();
+
+        for (InterviewData d : session.getInterviewDataList()) {
+        	String prompt = "Evaluate this technical answer in 3 lines:\n" +
+                    "1. Briefly evaluate the answer.\n" +
+                    "2. What did the candidate include that contributes to a good score?\n" +
+                    "3. What suggestions do you have for improving the answer?\n" +
+                    "Q: " + d.getQuestionText() + "\n" +
+                    "A: " + d.getAnswerText();
+
+            String feedback = callGemini(prompt).get(0);
+            d.setFeedback(feedback);
+
+            // Add entry like "q1 feedback": "..."
+            feedbackMap.put("Analysis" + d.getQuestionNumber() + " :", feedback);
+        }
+
+        dataRepository.saveAll(session.getInterviewDataList());
+
+        String overallPrompt = buildOverallPrompt(session);
+        List<String> resultLines = callGemini(overallPrompt);
+
+        String overallFeedback = "";
+        int score = 0;
+
+        for (String line : resultLines) {
+            if (line.toLowerCase().startsWith("feedback:")) {
+                overallFeedback = line.substring("feedback:".length()).trim();
+            } else if (line.toLowerCase().startsWith("score:")) {
+                try {
+                    score = Integer.parseInt(line.replaceAll("[^0-9]", ""));
+                } catch (NumberFormatException e) {
+                    score = 0;
                 }
             }
-        } catch (Exception ignored) {}
-        System.out.println("No valid score found, returning default 60");
-        return 60;
+        }
+
+        session.setOverallFeedback(overallFeedback);
+        session.setScore(score);
+        sessionRepository.save(session);
+
+        // Use the updated constructor
+        return new QuestionResponseDTO(sessionIdStr, true, feedbackMap, overallFeedback, score);
+    }
+
+
+    private String buildOverallPrompt(InterviewSession session) {
+        StringBuilder sb = new StringBuilder("You are an AI interviewer. Given the following Q&A pairs:\n");
+
+        for (InterviewData d : session.getInterviewDataList()) {
+            sb.append("Q: ").append(d.getQuestionText()).append("\n")
+              .append("A: ").append(d.getAnswerText()).append("\n");
+        }
+
+        sb.append("Now provide an overall feedback and a score (out of 100).\n")
+          .append("Format:\nFeedback: <your feedback>\nScore: <numeric score>");
+
+        return sb.toString();
+    }
+    
+
+    private String buildPrompt(List<String> skills) {
+        return "You are an AI interviewer.\nCandidate skills: " + skills +
+                "\nGenerate " + TOTAL_QUESTIONS + " technical interview questions. Respond ONLY with the questions, numbered from 1 to " + TOTAL_QUESTIONS + ", each on a new line.";
     }
 }
