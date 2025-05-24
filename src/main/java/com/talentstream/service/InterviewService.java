@@ -122,12 +122,12 @@ public class InterviewService {
         Map<String, String> feedbackMap = new LinkedHashMap<>();
 
         for (InterviewData d : session.getInterviewDataList()) {
-        	String prompt = "Evaluate this technical answer in 3 lines:\n" +
-                    "1. Briefly evaluate the answer.\n" +
-                    "2. What did the candidate include that contributes to a good score?\n" +
-                    "3. What suggestions do you have for improving the answer?\n" +
+        	String prompt = "Evaluate this technical answer in 3 lines: " +
+                    "Briefly evaluate the answer, mention what the candidate included that contributes to a good score, " +
+                    "and suggest improvements. " +
                     "Q: " + d.getQuestionText() + "\n" +
                     "A: " + d.getAnswerText();
+
 
             String feedback = callGemini(prompt).get(0);
             d.setFeedback(feedback);
@@ -174,11 +174,12 @@ public class InterviewService {
         }
 
         sb.append("Now provide an overall feedback and a score (out of 100).\n")
+          .append("Your feedback should clearly and brief state the areas where the candidate needs to improve and give specific suggestions on how they can develop these skills in 4 lines.\n")
           .append("Format:\nFeedback: <your feedback>\nScore: <numeric score>");
 
         return sb.toString();
     }
-    
+
 
     private String buildPrompt(List<String> skills) {
         return "You are an AI interviewer.\nCandidate skills: " + skills +
