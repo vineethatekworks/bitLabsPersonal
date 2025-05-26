@@ -1,10 +1,11 @@
 package com.talentstream.entity;
 
 import jakarta.persistence.*;
+import java.util.List;
 
 @Entity
-@Table(name = "interview_data")
-public class InterviewData {
+@Table(name = "interview_skill")
+public class InterviewSkill {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -12,24 +13,19 @@ public class InterviewData {
 
     private String skillName;
 
-    @Column(columnDefinition = "TEXT")
-    private String questionText;
-
-    @Column(columnDefinition = "TEXT")
-    private String answerText;
+    private int noOfQuestionsAsked;
 
     private double score;
 
     @Column(columnDefinition = "TEXT")
-    private String feedback;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "interview_skill_id")
-    private InterviewSkill interviewSkill;
+    private String feedbackOnSkill;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "session_id")
     private InterviewSession interviewSession;
+
+    @OneToMany(mappedBy = "interviewSkill", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<InterviewData> interviewDataList;
 
     // Getters and Setters
 
@@ -49,20 +45,12 @@ public class InterviewData {
         this.skillName = skillName;
     }
 
-    public String getQuestionText() {
-        return questionText;
+    public int getNoOfQuestionsAsked() {
+        return noOfQuestionsAsked;
     }
 
-    public void setQuestionText(String questionText) {
-        this.questionText = questionText;
-    }
-
-    public String getAnswerText() {
-        return answerText;
-    }
-
-    public void setAnswerText(String answerText) {
-        this.answerText = answerText;
+    public void setNoOfQuestionsAsked(int noOfQuestionsAsked) {
+        this.noOfQuestionsAsked = noOfQuestionsAsked;
     }
 
     public double getScore() {
@@ -73,20 +61,12 @@ public class InterviewData {
         this.score = score;
     }
 
-    public String getFeedback() {
-        return feedback;
+    public String getFeedbackOnSkill() {
+        return feedbackOnSkill;
     }
 
-    public void setFeedback(String feedback) {
-        this.feedback = feedback;
-    }
-
-    public InterviewSkill getInterviewSkill() {
-        return interviewSkill;
-    }
-
-    public void setInterviewSkill(InterviewSkill interviewSkill) {
-        this.interviewSkill = interviewSkill;
+    public void setFeedbackOnSkill(String feedbackOnSkill) {
+        this.feedbackOnSkill = feedbackOnSkill;
     }
 
     public InterviewSession getInterviewSession() {
@@ -95,5 +75,13 @@ public class InterviewData {
 
     public void setInterviewSession(InterviewSession interviewSession) {
         this.interviewSession = interviewSession;
+    }
+
+    public List<InterviewData> getInterviewDataList() {
+        return interviewDataList;
+    }
+
+    public void setInterviewDataList(List<InterviewData> interviewDataList) {
+        this.interviewDataList = interviewDataList;
     }
 }

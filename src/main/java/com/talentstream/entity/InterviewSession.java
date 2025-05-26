@@ -1,79 +1,109 @@
 package com.talentstream.entity;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.List;
 
 @Entity
-@Table(name = "interview_sessions")
+@Table(name = "interview_session")
 public class InterviewSession {
 
-	@Id
-	@Column(name = "session_id", nullable = false)
-	private UUID sessionId;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-	@ManyToOne
-	@JoinColumn(name = "applicant_id", nullable = false)
-	private Applicant applicant;
+    private LocalDateTime startedAt;
 
-	@Column(name = "created_at", nullable = false)
-	private LocalDateTime createdAt = LocalDateTime.now();
+    private String status; 
 
-	@OneToMany(mappedBy = "session", cascade = CascadeType.ALL, orphanRemoval = true)
-	private List<InterviewData> interviewDataList = new ArrayList<>();
+    private double totalScore;
 
-	@Column(name = "overall_feedback", columnDefinition = "TEXT")
-	private String overallFeedback;
+    private int totalQuestionsAsked;
 
-	@Column(name = "score")
-	private int score;
+    @Column(columnDefinition = "TEXT")
+    private String overallFeedback;
 
-	public UUID getSessionId() {
-		return sessionId;
-	}
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "applicant_id")
+    private Applicant applicant;
 
-	public void setSessionId(UUID sessionId) {
-		this.sessionId = sessionId;
-	}
+    @OneToMany(mappedBy = "interviewSession", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<InterviewSkill> interviewSkills;
 
-	public Applicant getApplicant() {
-		return applicant;
-	}
+    @OneToMany(mappedBy = "interviewSession", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<InterviewData> interviewDataList;
 
-	public void setApplicant(Applicant applicant) {
-		this.applicant = applicant;
-	}
+    // Getters and Setters
 
-	public LocalDateTime getCreatedAt() {
-		return createdAt;
-	}
+    public Long getId() {
+        return id;
+    }
 
-	public void setCreatedAt(LocalDateTime createdAt) {
-		this.createdAt = createdAt;
-	}
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-	public List<InterviewData> getInterviewDataList() {
-		return interviewDataList;
-	}
+    public LocalDateTime getStartedAt() {
+        return startedAt;
+    }
 
-	public void setInterviewDataList(List<InterviewData> interviewDataList) {
-		this.interviewDataList = interviewDataList;
-	}
+    public void setStartedAt(LocalDateTime startedAt) {
+        this.startedAt = startedAt;
+    }
 
-	public String getOverallFeedback() {
-		return overallFeedback;
-	}
+    public String getStatus() {
+        return status;
+    }
 
-	public void setOverallFeedback(String overallFeedback) {
-		this.overallFeedback = overallFeedback;
-	}
+    public void setStatus(String status) {
+        this.status = status;
+    }
 
-	public int getScore() {
-		return score;
-	}
+    public double getTotalScore() {
+        return totalScore;
+    }
 
-	public void setScore(int score) {
-		this.score = score;
-	}
+    public void setTotalScore(double totalScore) {
+        this.totalScore = totalScore;
+    }
 
+    public int getTotalQuestionsAsked() {
+        return totalQuestionsAsked;
+    }
+
+    public void setTotalQuestionsAsked(int totalQuestionsAsked) {
+        this.totalQuestionsAsked = totalQuestionsAsked;
+    }
+
+    public String getOverallFeedback() {
+        return overallFeedback;
+    }
+
+    public void setOverallFeedback(String overallFeedback) {
+        this.overallFeedback = overallFeedback;
+    }
+
+    public Applicant getApplicant() {
+        return applicant;
+    }
+
+    public void setApplicant(Applicant applicant) {
+        this.applicant = applicant;
+    }
+
+    public List<InterviewSkill> getInterviewSkills() {
+        return interviewSkills;
+    }
+
+    public void setInterviewSkills(List<InterviewSkill> interviewSkills) {
+        this.interviewSkills = interviewSkills;
+    }
+
+    public List<InterviewData> getInterviewDataList() {
+        return interviewDataList;
+    }
+
+    public void setInterviewDataList(List<InterviewData> interviewDataList) {
+        this.interviewDataList = interviewDataList;
+    }
 }

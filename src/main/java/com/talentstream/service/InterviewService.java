@@ -133,7 +133,7 @@ public class InterviewService {
             d.setFeedback(feedback);
 
             // Add entry like "q1 feedback": "..."
-            feedbackMap.put("Analysis" + d.getQuestionNumber() + " :", feedback);
+            feedbackMap.put("Analysis" + d.getQuestionNumber() , feedback);
         }
 
         dataRepository.saveAll(session.getInterviewDataList());
@@ -179,10 +179,15 @@ public class InterviewService {
 
         return sb.toString();
     }
-
+ 
 
     private String buildPrompt(List<String> skills) {
-        return "You are an AI interviewer.\nCandidate skills: " + skills +
-                "\nGenerate " + TOTAL_QUESTIONS + " technical interview questions. Respond ONLY with the questions, numbered from 1 to " + TOTAL_QUESTIONS + ", each on a new line.";
+        return "You are an AI technical interviewer.\n" +
+               "The candidate has the following skills: " + skills + ".\n" +
+               "Generate " + TOTAL_QUESTIONS + " unique and diverse technical interview questions.\n" +
+               "Each question must be answerable in a short text format (not code).\n" +
+               "Avoid generic or repeated questions. Do not include any instructions or explanations.\n" +
+               "Respond ONLY with the questions, numbered from 1 to " + TOTAL_QUESTIONS + ", each on a new line.";
     }
+
 }
