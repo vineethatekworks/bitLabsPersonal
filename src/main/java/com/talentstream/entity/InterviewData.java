@@ -1,18 +1,23 @@
 package com.talentstream.entity;
 
-import jakarta.persistence.*;
+import javax.persistence.*;
 
 @Entity
 @Table(name = "interview_data")
 public class InterviewData {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long id;
 
-    private String skillName;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "session_id", nullable = false)
+    private InterviewSession interviewSession;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(nullable = false)
+    private int questionNumber;
+
+    @Column(columnDefinition = "TEXT", nullable = false)
     private String questionText;
 
     @Column(columnDefinition = "TEXT")
@@ -23,30 +28,33 @@ public class InterviewData {
     @Column(columnDefinition = "TEXT")
     private String feedback;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "interview_skill_id")
-    private InterviewSkill interviewSkill;
+    public InterviewData() {
+    }
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "session_id")
-    private InterviewSession interviewSession;
-
-    // Getters and Setters
+    public InterviewData(InterviewSession interviewSession, int questionNumber, String questionText) {
+        this.interviewSession = interviewSession;
+        this.questionNumber = questionNumber;
+        this.questionText = questionText;
+    }
 
     public Long getId() {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public InterviewSession getInterviewSession() {
+        return interviewSession;
     }
 
-    public String getSkillName() {
-        return skillName;
+    public void setInterviewSession(InterviewSession interviewSession) {
+        this.interviewSession = interviewSession;
     }
 
-    public void setSkillName(String skillName) {
-        this.skillName = skillName;
+    public int getQuestionNumber() {
+        return questionNumber;
+    }
+
+    public void setQuestionNumber(int questionNumber) {
+        this.questionNumber = questionNumber;
     }
 
     public String getQuestionText() {
@@ -81,19 +89,7 @@ public class InterviewData {
         this.feedback = feedback;
     }
 
-    public InterviewSkill getInterviewSkill() {
-        return interviewSkill;
-    }
-
-    public void setInterviewSkill(InterviewSkill interviewSkill) {
-        this.interviewSkill = interviewSkill;
-    }
-
-    public InterviewSession getInterviewSession() {
-        return interviewSession;
-    }
-
-    public void setInterviewSession(InterviewSession interviewSession) {
-        this.interviewSession = interviewSession;
+    public void setId(Long id) {
+        this.id = id;
     }
 }

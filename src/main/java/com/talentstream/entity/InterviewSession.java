@@ -1,6 +1,6 @@
 package com.talentstream.entity;
 
-import jakarta.persistence.*;
+import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -9,12 +9,18 @@ import java.util.List;
 public class InterviewSession {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "applicant_id", nullable = false)
+    private Applicant applicant;
 
     private LocalDateTime startedAt;
 
-    private String status; 
+    private LocalDateTime endedAt;
+
+    private String status;
 
     private double totalScore;
 
@@ -23,17 +29,8 @@ public class InterviewSession {
     @Column(columnDefinition = "TEXT")
     private String overallFeedback;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "applicant_id")
-    private Applicant applicant;
-
-    @OneToMany(mappedBy = "interviewSession", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<InterviewSkill> interviewSkills;
-
     @OneToMany(mappedBy = "interviewSession", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<InterviewData> interviewDataList;
-
-    // Getters and Setters
 
     public Long getId() {
         return id;
@@ -43,12 +40,28 @@ public class InterviewSession {
         this.id = id;
     }
 
+    public Applicant getApplicant() {
+        return applicant;
+    }
+
+    public void setApplicant(Applicant applicant) {
+        this.applicant = applicant;
+    }
+
     public LocalDateTime getStartedAt() {
         return startedAt;
     }
 
     public void setStartedAt(LocalDateTime startedAt) {
         this.startedAt = startedAt;
+    }
+
+    public LocalDateTime getEndedAt() {
+        return endedAt;
+    }
+
+    public void setEndedAt(LocalDateTime endedAt) {
+        this.endedAt = endedAt;
     }
 
     public String getStatus() {
@@ -81,22 +94,6 @@ public class InterviewSession {
 
     public void setOverallFeedback(String overallFeedback) {
         this.overallFeedback = overallFeedback;
-    }
-
-    public Applicant getApplicant() {
-        return applicant;
-    }
-
-    public void setApplicant(Applicant applicant) {
-        this.applicant = applicant;
-    }
-
-    public List<InterviewSkill> getInterviewSkills() {
-        return interviewSkills;
-    }
-
-    public void setInterviewSkills(List<InterviewSkill> interviewSkills) {
-        this.interviewSkills = interviewSkills;
     }
 
     public List<InterviewData> getInterviewDataList() {

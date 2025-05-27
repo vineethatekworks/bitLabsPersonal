@@ -30,8 +30,9 @@ public class InterviewController {
 	
 	@PostMapping("/start")
 	public ResponseEntity<?> startInterview(@RequestBody InterviewRequestDTO request){
-		    Applicant applicant = new Applicant();
-	        applicant.setId(request.getApplicantId());
+		   
+            Applicant applicant = new Applicant();
+            applicant.setId(request.getApplicantId());
 			List<String> skills = ApplicantProfileService.getSkillNamesByApplicantId(request.getApplicantId());
 			System.out.println("skills"+skills);
 	        QuestionResponseDTO firstQuestion = interviewService.startInterview(applicant,skills);
@@ -41,7 +42,7 @@ public class InterviewController {
 	@PostMapping("/answer")
     public ResponseEntity<?> submitAnswer(@RequestBody AnswerRequestDTO request) {
       try {
-    	  QuestionResponseDTO response = interviewService.submitAnswer(
+    	  QuestionResponseDTO response = interviewService.evaluateAnswerAndGetNextQuestion(
                   request.getSessionId(),
                   request.getQuestionNumber(),
                   request.getAnswer());

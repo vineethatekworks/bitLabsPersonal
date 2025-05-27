@@ -1,7 +1,7 @@
 package com.talentstream.dto;
 
 public class AnswerRequestDTO {
-	private String sessionId;
+	private Long sessionId;
 	private int questionNumber;
 	private String answer;
 	
@@ -11,18 +11,18 @@ public class AnswerRequestDTO {
 		// TODO Auto-generated constructor stub
 	}
 
-	public AnswerRequestDTO(String sessionId, int questionNumber, String answer) {
+	public AnswerRequestDTO(Long sessionId, int questionNumber, String answer) {
 		super();
 		this.sessionId = sessionId;
 		this.questionNumber = questionNumber;
 		this.answer = answer;
 	}
 
-	public String getSessionId() {
+	public Long getSessionId() {
 		return sessionId;
 	}
 
-	public void setSessionId(String sessionId) {
+	public void setSessionId(Long sessionId) {
 		this.sessionId = sessionId;
 	}
 

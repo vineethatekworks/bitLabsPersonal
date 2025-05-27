@@ -18,176 +18,125 @@ import java.util.stream.Collectors;
 @Service
 public class InterviewService {
 
-    @Value("${gemini.api.key}")
-    private String apiKey;
+	@Value("${gemini.api.key}")
+	private String apiKey;
 
-    private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=";
-    private static final int TOTAL_QUESTIONS = 3;
+	private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=";
 
-    private final HttpClient httpClient = HttpClient.newHttpClient();
-    private final Gson gson = new Gson();
+	private final HttpClient httpClient = HttpClient.newHttpClient();
+	private final Gson gson = new Gson();
+	
+	@Autowired
+	private ApplicantProfileService ApplicantProfileService;
 
-    @Autowired
-    private  InterviewSessionRepo sessionRepository;
-    @Autowired
-    private  InterviewDataRepo dataRepository;
+	@Autowired
+	private InterviewSessionRepo sessionRepository;
 
+	@Autowired
+	private InterviewDataRepo dataRepository;
 
-    // Start interview, pass Applicant entity (load this in your controller)
-    public QuestionResponseDTO startInterview(Applicant applicant, List<String> skills) {
-        String prompt = buildPrompt(skills);
-        List<String> questions = callGemini(prompt);
+	public QuestionResponseDTO startInterview(Applicant applicant, List<String> skills) {
+		if (skills == null || skills.isEmpty()) {
+			throw new RuntimeException("No skills provided for the candidate");
+		}
 
-        InterviewSession session = new InterviewSession();
-        session.setSessionId(UUID.randomUUID());
-        session.setApplicant(applicant);
-        session.setCreatedAt(LocalDateTime.now());
-
-        List<InterviewData> interviewDataList = new ArrayList<>();
-        for (int i = 0; i < questions.size(); i++) {
-            InterviewData data = new InterviewData();
-            data.setSession(session);
-            data.setQuestionNumber(i + 1);
-            data.setQuestionText(questions.get(i));
-            interviewDataList.add(data);
-        }
-        session.setInterviewDataList(interviewDataList);
-
-        sessionRepository.save(session);
-
-        return new QuestionResponseDTO(session.getSessionId().toString(), 1, questions.get(0), false);
-    }
-
-    // Submit answer and get next question or score
-    public QuestionResponseDTO submitAnswer(String sessionIdStr, int questionNumber, String answer) {
-        UUID sessionId = UUID.fromString(sessionIdStr);
-        InterviewSession session = sessionRepository.findById(sessionId).orElseThrow(() -> new RuntimeException("Invalid sessionId"));
-
-        InterviewData data = session.getInterviewDataList().stream().filter(d -> d.getQuestionNumber() == questionNumber).findFirst().orElseThrow(() -> new RuntimeException("Question not found"));
-
-        data.setAnswerText(answer);
-        dataRepository.save(data);
-
-        int nextQuestionNumber = questionNumber + 1;
-
-        if (nextQuestionNumber > session.getInterviewDataList().size()) {
-            return completeInterview(session, sessionIdStr);
-        } else {
-            String nextQuestion = session.getInterviewDataList().stream()
-                    .filter(d -> d.getQuestionNumber() == nextQuestionNumber)
-                    .findFirst()
-                    .map(InterviewData::getQuestionText)
-                    .orElseThrow(() -> new RuntimeException("Next question not found"));
-
-            return new QuestionResponseDTO(sessionIdStr, nextQuestionNumber, nextQuestion, false);
-        }
-    }
-
-    private List<String> callGemini(String prompt) {
-        try {
-            Map<String, Object> content = Map.of("contents",
-                List.of(Map.of("parts", List.of(Map.of("text", prompt)))));
-
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(GEMINI_URL + apiKey))
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(gson.toJson(content)))
-                    .build();
-
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-            JsonObject json = JsonParser.parseString(response.body()).getAsJsonObject();
-            JsonArray candidates = json.getAsJsonArray("candidates");
-            JsonObject parts = candidates.get(0)
-                    .getAsJsonObject()
-                    .getAsJsonObject("content")
-                    .getAsJsonArray("parts")
-                    .get(0)
-                    .getAsJsonObject();
-
-            String text = parts.get("text").getAsString();
-
-            return Arrays.stream(text.split("\n"))
-                    .map(String::trim)
-                    .filter(line -> !line.isEmpty())
-                    .collect(Collectors.toList());
-
-        } catch (Exception e) {
-            return List.of("Gemini API Error: " + e.getMessage());
-        }
-    }
-
-    
-    private QuestionResponseDTO completeInterview(InterviewSession session, String sessionIdStr) {
-        Map<String, String> feedbackMap = new LinkedHashMap<>();
-
-        for (InterviewData d : session.getInterviewDataList()) {
-        	String prompt = "Evaluate this technical answer in 3 lines: " +
-                    "Briefly evaluate the answer, mention what the candidate included that contributes to a good score, " +
-                    "and suggest improvements. " +
-                    "Q: " + d.getQuestionText() + "\n" +
-                    "A: " + d.getAnswerText();
+		String prompt = "Generate a beginner-level technical interview question about " + skills.get(0) + " that:\n" +
+                "1. Tests core conceptual understanding (not advanced topics)\n" +
+                "2. Is appropriate for recent graduates/freshers\n" +
+                "3. Can be answered in 1-2 minutes\n" +
+                "4. Has not been asked before in this interview\n" +
+                "5. Focuses on fundamental principles rather than memorization\n" +
+                "6. Does not require prior work experience\n\n" +
+                "For the skill '" + skills.get(0) + "', provide ONLY the question (no numbering or extra text).";
 
 
-            String feedback = callGemini(prompt).get(0);
-            d.setFeedback(feedback);
+		List<String> questions = callGemini(prompt);
+		String firstQuestion = questions.isEmpty() ? "No question generated." : questions.get(0);
 
-            // Add entry like "q1 feedback": "..."
-            feedbackMap.put("Analysis" + d.getQuestionNumber() , feedback);
-        }
+		InterviewSession session = new InterviewSession();
+		session.setApplicant(applicant);
+		session.setStartedAt(LocalDateTime.now());
+		session.setStatus("IN_PROGRESS");
 
-        dataRepository.saveAll(session.getInterviewDataList());
+		InterviewData questionData = new InterviewData(session, 1, firstQuestion);
+		session.setInterviewDataList(List.of(questionData));
 
-        String overallPrompt = buildOverallPrompt(session);
-        List<String> resultLines = callGemini(overallPrompt);
+		sessionRepository.save(session);
 
-        String overallFeedback = "";
-        int score = 0;
+		return new QuestionResponseDTO(session.getId().toString(), 1, firstQuestion, false);
+	}
 
-        for (String line : resultLines) {
-            if (line.toLowerCase().startsWith("feedback:")) {
-                overallFeedback = line.substring("feedback:".length()).trim();
-            } else if (line.toLowerCase().startsWith("score:")) {
-                try {
-                    score = Integer.parseInt(line.replaceAll("[^0-9]", ""));
-                } catch (NumberFormatException e) {
-                    score = 0;
-                }
-            }
-        }
+	
 
-        session.setOverallFeedback(overallFeedback);
-        session.setScore(score);
-        sessionRepository.save(session);
+	private List<String> callGemini(String prompt) {
+		try {
+			Map<String, Object> content = Map.of("contents", List.of(Map.of("parts", List.of(Map.of("text", prompt)))));
 
-        // Use the updated constructor
-        return new QuestionResponseDTO(sessionIdStr, true, feedbackMap, overallFeedback, score);
-    }
+			HttpRequest request = HttpRequest.newBuilder().uri(URI.create(GEMINI_URL + apiKey))
+					.header("Content-Type", "application/json")
+					.POST(HttpRequest.BodyPublishers.ofString(gson.toJson(content))).build();
+
+			HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+			JsonObject json = JsonParser.parseString(response.body()).getAsJsonObject();
+			JsonArray candidates = json.getAsJsonArray("candidates");
+			JsonObject parts = candidates.get(0).getAsJsonObject().getAsJsonObject("content").getAsJsonArray("parts")
+					.get(0).getAsJsonObject();
+
+			String text = parts.get("text").getAsString();
+
+			return Arrays.stream(text.split("\n")).map(String::trim).filter(line -> !line.isEmpty())
+					.collect(Collectors.toList());
+
+		} catch (Exception e) {
+			return List.of("Gemini API Error: " + e.getMessage());
+		}
+	}
 
 
-    private String buildOverallPrompt(InterviewSession session) {
-        StringBuilder sb = new StringBuilder("You are an AI interviewer. Given the following Q&A pairs:\n");
 
-        for (InterviewData d : session.getInterviewDataList()) {
-            sb.append("Q: ").append(d.getQuestionText()).append("\n")
-              .append("A: ").append(d.getAnswerText()).append("\n");
-        }
+	public QuestionResponseDTO evaluateAnswerAndGetNextQuestion(Long sessionId, int questionNumber, String answer) {
+		// Retrieve the session and current question
+		InterviewSession session = sessionRepository.findById(sessionId)
+				.orElseThrow(() -> new RuntimeException("Session not found"));
+		List<InterviewData> interviewDataList = session.getInterviewDataList();
 
-        sb.append("Now provide an overall feedback and a score (out of 100).\n")
-          .append("Your feedback should clearly and brief state the areas where the candidate needs to improve and give specific suggestions on how they can develop these skills in 4 lines.\n")
-          .append("Format:\nFeedback: <your feedback>\nScore: <numeric score>");
+		//get the skills from the session
+		Applicant applicant = session.getApplicant();
+		List<String> skills = ApplicantProfileService.getSkillNamesByApplicantId(applicant.getId());
 
-        return sb.toString();
-    }
- 
+				
+		// Find the current question
+		InterviewData currentQuestion = interviewDataList.stream()
+				.filter(data -> data.getQuestionNumber() == questionNumber)
+				.findFirst()
+				.orElseThrow(() -> new RuntimeException("Question not found"));
 
-    private String buildPrompt(List<String> skills) {
-        return "You are an AI technical interviewer.\n" +
-               "The candidate has the following skills: " + skills + ".\n" +
-               "Generate " + TOTAL_QUESTIONS + " unique and diverse technical interview questions.\n" +
-               "Each question must be answerable in a short text format (not code).\n" +
-               "Avoid generic or repeated questions. Do not include any instructions or explanations.\n" +
-               "Respond ONLY with the questions, numbered from 1 to " + TOTAL_QUESTIONS + ", each on a new line.";
-    }
+		// Evaluate the answer
+		String feedback = evaluation(currentQuestion.getQuestionText(), answer, skills);
+		return null;
 
+
+	}
+
+	
+
+
+
+	private String evaluation(String question, String answer, List<String> skills) {
+
+    String prompt = "Evaluate the following answer to the question: '" + question + "'\n" +
+            "Answer: '" + answer + "'\n" +
+            "give two line feedback on the answer what is good and what is bad and where it could be improved.\n" +
+            "Return ONLY the feedback, no extra text or numbering.\n" +
+            "give a score in percentage from 30 to 100 based on the answer, where 30 is the worst and 100 is the best.\n" +
+			"based on the feedback, generate the next question. The next question should be related to the topic of the previous question, but at a slightly higher level of difficulty.\n" +
+			"Return the feedback and score in the format:\n" +
+			"Feedback: <feedback>\n" +
+			"Score: <score>\n" +
+			"Next Question: <next question>";
+	return prompt;
+
+  
+	}
 }
