@@ -1,7 +1,9 @@
 package com.talentstream.dto;
 
+import java.util.UUID;
+
 public class AnswerRequestDTO {
-	private Long sessionId;
+	private UUID sessionId;
 	private int questionNumber;
 	private String answer;
 	
@@ -11,18 +13,18 @@ public class AnswerRequestDTO {
 		// TODO Auto-generated constructor stub
 	}
 
-	public AnswerRequestDTO(Long sessionId, int questionNumber, String answer) {
+	public AnswerRequestDTO(UUID sessionId, int questionNumber, String answer) {
 		super();
 		this.sessionId = sessionId;
 		this.questionNumber = questionNumber;
 		this.answer = answer;
 	}
 
-	public Long getSessionId() {
+	public UUID getSessionId() {
 		return sessionId;
 	}
 
-	public void setSessionId(Long sessionId) {
+	public void setSessionId(UUID sessionId) {
 		this.sessionId = sessionId;
 	}
 

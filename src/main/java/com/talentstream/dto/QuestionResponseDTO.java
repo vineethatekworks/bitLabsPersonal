@@ -1,21 +1,35 @@
 package com.talentstream.dto;
 
-
 public class QuestionResponseDTO {
-
 	private String sessionId;
-	private int QuestionNumber;
-	private String Question;
-	private boolean interviewCompleted;
+	private int questionNumber;
+	private String question;
+	private boolean completed;
+	private String feedback;
+	
+	
+
+	public QuestionResponseDTO() {
+		super();
+		// TODO Auto-generated constructor stub
+	}
+
+	public QuestionResponseDTO(String sessionId, int questionNumber, String question, boolean completed,
+			String feedback) {
+		super();
+		this.sessionId = sessionId;
+		this.questionNumber = questionNumber;
+		this.question = question;
+		this.completed = completed;
+		this.feedback = feedback;
+	}
 
 	
 
-	public QuestionResponseDTO(String sessionId, int questionNumber, String question, boolean interviewCompleted) {
-		super();
+	public QuestionResponseDTO(String sessionId, boolean completed, String overallFeedback) {
 		this.sessionId = sessionId;
-		QuestionNumber = questionNumber;
-		Question = question;
-		this.interviewCompleted = interviewCompleted;
+		this.completed = completed;
+		this.feedback = overallFeedback;
 	}
 
 	public String getSessionId() {
@@ -27,27 +41,35 @@ public class QuestionResponseDTO {
 	}
 
 	public int getQuestionNumber() {
-		return QuestionNumber;
+		return questionNumber;
 	}
 
 	public void setQuestionNumber(int questionNumber) {
-		QuestionNumber = questionNumber;
+		this.questionNumber = questionNumber;
 	}
 
 	public String getQuestion() {
-		return Question;
+		return question;
 	}
 
 	public void setQuestion(String question) {
-		Question = question;
+		this.question = question;
 	}
 
-	public boolean isInterviewCompleted() {
-		return interviewCompleted;
+	public boolean isCompleted() {
+		return completed;
 	}
 
-	public void setInterviewCompleted(boolean interviewCompleted) {
-		this.interviewCompleted = interviewCompleted;
+	public void setCompleted(boolean completed) {
+		this.completed = completed;
+	}
+
+	public String getFeedback() {
+		return feedback;
+	}
+
+	public void setFeedback(String feedback) {
+		this.feedback = feedback;
 	}
 
 }

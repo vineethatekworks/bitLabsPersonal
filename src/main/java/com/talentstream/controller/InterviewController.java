@@ -14,6 +14,7 @@ import com.talentstream.dto.AnswerRequestDTO;
 import com.talentstream.dto.InterviewRequestDTO;
 import com.talentstream.dto.QuestionResponseDTO;
 import com.talentstream.entity.Applicant;
+import com.talentstream.exception.InterviewException;
 import com.talentstream.service.ApplicantProfileService;
 import com.talentstream.service.InterviewService;
 
@@ -29,11 +30,14 @@ public class InterviewController {
 	
 	
 	@PostMapping("/start")
-	public ResponseEntity<?> startInterview(@RequestBody InterviewRequestDTO request){
+	public ResponseEntity<?> startInterview(@RequestBody InterviewRequestDTO request) throws InterviewException{
 		   
             Applicant applicant = new Applicant();
             applicant.setId(request.getApplicantId());
 			List<String> skills = ApplicantProfileService.getSkillNamesByApplicantId(request.getApplicantId());
+			if (skills.isEmpty()) {
+				throw new InterviewException("No skills found for applicant");
+			}
 			System.out.println("skills"+skills);
 	        QuestionResponseDTO firstQuestion = interviewService.startInterview(applicant,skills);
 	        return ResponseEntity.ok(firstQuestion);
@@ -42,10 +46,10 @@ public class InterviewController {
 	@PostMapping("/answer")
     public ResponseEntity<?> submitAnswer(@RequestBody AnswerRequestDTO request) {
       try {
-    	  QuestionResponseDTO response = interviewService.evaluateAnswerAndGetNextQuestion(
+    	  QuestionResponseDTO response = interviewService.evaluateAnswer(
                   request.getSessionId(),
-                  request.getQuestionNumber(),
-                  request.getAnswer());
+                  request.getAnswer(),
+                  request.getQuestionNumber());
           return ResponseEntity.ok(response);
 		
 	}catch (Exception e) {

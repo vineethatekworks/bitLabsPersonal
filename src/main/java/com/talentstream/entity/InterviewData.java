@@ -36,8 +36,14 @@ public class InterviewData {
         this.questionNumber = questionNumber;
         this.questionText = questionText;
     }
+    public InterviewData(InterviewSession interviewSession, int questionNumber, String questionText, String feedback) {
+        this.interviewSession = interviewSession;
+        this.questionNumber = questionNumber;
+        this.questionText = questionText;
+        this.feedback = feedback;
+    }
 
-    public Long getId() {
+	public Long getId() {
         return id;
     }
 
