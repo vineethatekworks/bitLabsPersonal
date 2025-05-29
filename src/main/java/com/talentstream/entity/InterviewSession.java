@@ -29,16 +29,16 @@ public class InterviewSession {
 
     private String currentDifficulty;
 
-    @Column(columnDefinition = "TEXT")
-    private String skillsJson;
+//    @Column(columnDefinition = "TEXT")
+//    private String skillsJson;
 
     @OneToMany(mappedBy = "interviewSession", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<InterviewData> interviewDataList;
 
-    @Transient
-    private List<String> skills;
+//    @Transient
+//    private List<String> skills;
     
-    @Column(columnDefinition = "TEXT",length = 2000)
+    @Column(columnDefinition = "TEXT")
     private String Overallfeedback;
 
     // Getters and setters
@@ -87,13 +87,13 @@ public class InterviewSession {
         this.currentDifficulty = currentDifficulty;
     }
 
-    public String getSkillsJson() {
-        return skillsJson;
-    }
-
-    public void setSkillsJson(String skillsJson) {
-        this.skillsJson = skillsJson;
-    }
+//    public String getSkillsJson() {
+//        return skillsJson;
+//    }
+//
+//    public void setSkillsJson(String skillsJson) {
+//        this.skillsJson = skillsJson;
+//    }
 
     public List<InterviewData> getInterviewDataList() {
         return interviewDataList;
@@ -103,13 +103,13 @@ public class InterviewSession {
         this.interviewDataList = interviewDataList;
     }
 
-    public List<String> getSkills() {
-        return skills;
-    }
-
-    public void setSkills(List<String> skills) {
-        this.skills = skills;
-    }
+//    public List<String> getSkills() {
+//        return skills;
+//    }
+//
+//    public void setSkills(List<String> skills) {
+//        this.skills = skills;
+//    }
 
 	public String getOverallfeedback() {
 		return Overallfeedback;

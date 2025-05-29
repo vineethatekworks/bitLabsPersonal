@@ -67,7 +67,6 @@ public class InterviewService {
 			session.setStatus("IN_PROGRESS");
 			session.setCurrentSkillIndex(0);
 			session.setCurrentDifficulty(DEFAULT_DIFFICULTY);
-			session.setSkills(skills);
 
 			InterviewData questionData = new InterviewData(session, 1, firstQuestion);
 			session.setInterviewDataList(List.of(questionData));
@@ -116,25 +115,19 @@ public class InterviewService {
 		
 
 		String evalPrompt = generatePromptForEvaluation(currentSkill, currentDifficulty, applicantAnswer);
-		System.out.println("evalPrompt" + evalPrompt);
 		try {
 			List<String> responseLines = callGemini(evalPrompt);
-			System.out.println("responseLines" + responseLines);
 
 			JsonObject responseJson = parseAIResponse(responseLines);
 			String action = responseJson.get("action").getAsString().toLowerCase();
 			String feedback = responseJson.has("feedback") ? responseJson.get("feedback").getAsString()
 					: "No feedback provided";
-			String nextQuestion = responseJson.has("question") ? responseJson.get("question").getAsString() : "";
-
-			System.out.println("Gemini response - action: {}, feedback: {}" + action + feedback);
+			
 			
 			if (currentQuestionData.isPresent()) {
 				InterviewData data = currentQuestionData.get();
-				data.setAnswerText(applicantAnswer);
 				data.setFeedback(feedback);
-				data.setScore(0);
-				dataRepository.save(data);
+				//dataRepository.save(data);
 			}
 
 			switch (action) {
@@ -324,12 +317,15 @@ public class InterviewService {
 		difficulty = validateDifficulty(difficulty);
 
 		StringBuilder prompt = new StringBuilder();
-		prompt.append("You're an expert technical interviewer assessing a candidate's knowledge of ").append(skill)
-				.append(".\n").append("Generate a ").append(difficulty).append(" level question that:\n")
-				.append("- Tests practical knowledge of ").append(skill).append("\n")
-				.append("- Is clear and concise and dont ask programming based questions\n")
-				.append("- Has a definitive answer\n")
-				.append("Provide ONLY the question text without numbering or additional explanation.");
+		prompt.append("You're an expert technical interviewer assessing a candidate's knowledge of ").append(skill).append(".\n")
+	      .append("Generate a ").append(difficulty).append(" level question that:\n")
+	      .append("- Tests practical knowledge of ").append(skill).append("\n")
+	      .append("- Is clear and concise and do not ask programming-based questions\n")
+	      .append("- Has a definitive answer\n")
+	      .append("- Is unique and not a repeat of commonly asked interview questions\n")
+	      .append("- Should not be repeated across sessions\n")
+	      .append("Provide ONLY the question text without numbering or additional explanation.");
+
 
 		if (previousAnswer != null) {
 			prompt.append("\nPrevious answer was: ").append(previousAnswer);
@@ -342,36 +338,39 @@ public class InterviewService {
 	}
 
 	private String generatePromptForEvaluation(String skill, String difficulty, String applicantAnswer) {
-		difficulty = validateDifficulty(difficulty);
-		System.out.println("applicant answer: " + applicantAnswer);
-
-		return "You're an expert technical interviewer evaluating a candidate's answer for a " + difficulty
-				+ " level question about " + skill + ".\n" + "Candidate answer: \"" + applicantAnswer + "\"\n\n"
-				+ "Evaluate the answer based on:\n" + "1. Technical accuracy\n" + "2. Depth of knowledge\n"
-				+ "3. Clarity of explanation\n\n" + "Determine the next step:\n"
-				+ "- If excellent and confident: move to next skill (action: next_skill)\n"
-				+ "- If excellent but not confident: ask a harder question (action: next_question)\n"
-				+ "- If good: ask a similar difficulty question (action: next_question)\n"
-				+ "- If weak: ask an easier question (action: simpler_question)\n"
-				+ "- If very poor or 'I don't know': move to next skill (action: next_skill)\n\n"
-				+ "Provide brief constructive feedback.\n" + "Respond with ONLY raw JSON in this exact format:\n"
-				+ "{\"action\": \"next_question|simpler_question|next_skill|end\", "
-				+ "\"question\": \"next question or empty\", " + "\"feedback\": \"your feedback\"}";
+	    difficulty = validateDifficulty(difficulty);
+	    
+	    return "Evaluate this " + difficulty + " level " + skill + " answer from a fresh grad:\n\"" 
+	            + applicantAnswer + "\"\n\n"
+	            + "Score (0-100) based on:\n"
+	            + "- Technical accuracy (30)\n"
+	            + "- Knowledge depth (25)\n"
+	            + "- Explanation clarity (25)\n"
+	            + "- Logical thinking (20)\n\n"
+	            + "Action rules:\n"
+	            + ">65: next_skill\n"
+	            + "50-65: similar question\n"
+	            + "35-49: easier question\n"
+	            + "<35/I don't know/irrelavant: next_skill\n\n"
+	            + "Respond with JSON containing:\n"
+	            + "1. Action based on score\n"
+	            + "2. Calculated score\n"
+	            + "3. Next question (if applicable)\n"
+	            + "4. Brief feedback including the score (e.g., 'Your score: 72/100. [feedback]')\n\n"
+	            + "Format:\n"
+	            + "{\"action\":\"...\", \"score\":0-100, \"question\":\"\", "
+	            + "\"feedback\":\"Your score: X/100. [3-line feedback]\"}";
 	}
-
 	private JsonObject parseAIResponse(List<String> response) throws InterviewException {
 	    try {
 	        System.out.println("response: " + response);
 
-	        // Step 1: Join list into a single string
 	        String combined = String.join(" ", response).trim();
 
-	        // Step 2: Remove markdown and cleanup
 	        String cleaned = combined.replaceAll("```json", "")
 	                                 .replaceAll("```", "")
 	                                 .trim();
 
-	        // Step 3: Find first valid JSON object
 	        int start = cleaned.indexOf("{");
 	        int end = cleaned.lastIndexOf("}");
 
@@ -382,7 +381,6 @@ public class InterviewService {
 	        String jsonPart = cleaned.substring(start, end + 1).trim();
 	        System.out.println("jsonPart: " + jsonPart);
 
-	        // Step 4: Parse the JSON
 	        return JsonParser.parseString(jsonPart).getAsJsonObject();
 
 	    } catch (Exception e) {

@@ -19,11 +19,11 @@ public class InterviewData {
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String questionText;
+//
+//    @Column(columnDefinition = "TEXT")
+//    private String answerText;
 
-    @Column(columnDefinition = "TEXT")
-    private String answerText;
-
-    private double score;
+//   private double score;
 
     @Column(columnDefinition = "TEXT")
     private String feedback;
@@ -71,21 +71,21 @@ public class InterviewData {
         this.questionText = questionText;
     }
 
-    public String getAnswerText() {
-        return answerText;
-    }
-
-    public void setAnswerText(String answerText) {
-        this.answerText = answerText;
-    }
-
-    public double getScore() {
-        return score;
-    }
-
-    public void setScore(double score) {
-        this.score = score;
-    }
+//    public String getAnswerText() {
+//        return answerText;
+//    }
+//
+//    public void setAnswerText(String answerText) {
+//        this.answerText = answerText;
+//    }
+//
+//    public double getScore() {
+//        return score;
+//    }
+//
+//    public void setScore(double score) {
+//        this.score = score;
+//    }
 
     public String getFeedback() {
         return feedback;

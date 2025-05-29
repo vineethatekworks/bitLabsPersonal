@@ -8439,3 +8439,24 @@ com.talentstream.exception.InterviewException: Error calling Gemini API: Gemini 
 28-05-2025_19:19:16.459{UTC}|report-tool|INFO ||c.t.c.ApplicantProfileController|Profile view fetched successfully for applicantId: 1
 28-05-2025_19:19:36.642{UTC}|report-tool|INFO ||c.t.s.InterviewService|overallfeedback: 
 28-05-2025_19:19:36.644{UTC}|report-tool|INFO ||c.t.s.InterviewService|Completed interview session: cebf44ba-7097-4694-96cd-362ada5c5f72
+28-05-2025_19:20:10.917{UTC}|report-tool|INFO ||c.t.s.InterviewService|overallfeedback: 
+28-05-2025_19:20:10.919{UTC}|report-tool|INFO ||c.t.s.InterviewService|Completed interview session: b0f1ba53-91eb-48e2-9528-2ce10a9b0f09
+28-05-2025_19:30:48.527{UTC}|report-tool|INFO ||o.s.b.a.SpringApplicationAdminMXBeanRegistrar$SpringApplicationAdmin|Application shutdown requested.
+28-05-2025_19:30:48.538{UTC}|report-tool|INFO ||o.a.c.h.Http11NioProtocol|Pausing ProtocolHandler ["http-nio-8081"]
+28-05-2025_19:30:48.538{UTC}|report-tool|INFO ||o.a.c.c.StandardService|Stopping service [Tomcat]
+28-05-2025_19:30:48.540{UTC}|report-tool|INFO ||o.a.c.c.C.[.[.[/]|Destroying Spring FrameworkServlet 'dispatcherServlet'
+28-05-2025_19:30:48.542{UTC}|report-tool|WARN ||o.a.c.l.WebappClassLoaderBase|The web application [ROOT] appears to have started a thread named [HikariPool-1 housekeeper] but has failed to stop it. This is very likely to create a memory leak. Stack trace of thread:
+ java.base/jdk.internal.misc.Unsafe.park(Native Method)
+ java.base/java.util.concurrent.locks.LockSupport.parkNanos(LockSupport.java:269)
+ java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.awaitNanos(AbstractQueuedSynchronizer.java:1763)
+ java.base/java.util.concurrent.ScheduledThreadPoolExecutor$DelayedWorkQueue.take(ScheduledThreadPoolExecutor.java:1182)
+ java.base/java.util.concurrent.ScheduledThreadPoolExecutor$DelayedWorkQueue.take(ScheduledThreadPoolExecutor.java:899)
+ java.base/java.util.concurrent.ThreadPoolExecutor.getTask(ThreadPoolExecutor.java:1070)
+ java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1130)
+ java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+ java.base/java.lang.Thread.run(Thread.java:1583)
+28-05-2025_19:30:48.542{UTC}|report-tool|INFO ||o.a.c.h.Http11NioProtocol|Stopping ProtocolHandler ["http-nio-8081"]
+28-05-2025_19:30:48.544{UTC}|report-tool|INFO ||o.a.c.h.Http11NioProtocol|Destroying ProtocolHandler ["http-nio-8081"]
+28-05-2025_19:30:48.568{UTC}|report-tool|INFO ||o.s.o.j.LocalContainerEntityManagerFactoryBean|Closing JPA EntityManagerFactory for persistence unit 'default'
+28-05-2025_19:30:48.571{UTC}|report-tool|INFO ||c.z.h.HikariDataSource|HikariPool-1 - Shutdown initiated...
+28-05-2025_19:30:48.758{UTC}|report-tool|INFO ||c.z.h.HikariDataSource|HikariPool-1 - Shutdown completed.
